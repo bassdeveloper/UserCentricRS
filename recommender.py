@@ -45,6 +45,7 @@ def kfn(user_id, e, k):
 
     for result in db.fetch('SELECT user_id FROM users'):
         user = result[0]
+        print(user)
         if user == user_id:
             continue
         max_r = db.fetch("SELECT MAX(rating) FROM ratings WHERE user_id = {0}".format(user))[0][0]

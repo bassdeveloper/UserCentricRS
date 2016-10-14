@@ -19,7 +19,6 @@ class database:
             c.execute('drop table ratings')
             c.execute('drop table movies')
             c.execute('drop table users')
-            c.execute('drop table user_min_max_ratings')
         except Exception as e:
             print(e)
 
@@ -43,12 +42,6 @@ class database:
                     zipcode INT NOT NULL,
                     PRIMARY KEY(user_id));''')
 
-        c.execute('''CREATE TABLE user_min_max_ratings
-                    (user_id INT NOT NULL,
-                    min_r INT NOT NULL,
-                    max_r INT NOT NULL,
-                    PRIMARY KEY (user_id));''')
-
         files = [f for f in listdir(self.data_dir) if
                  isfile(join(self.data_dir, f)) and f != "README" and f != "movies_original.dat"]
 
@@ -61,13 +54,6 @@ class database:
                     res = ','.join(str(v) if str(v).isnumeric() else "\"{0}\"".format(v) for v in temp_fields)
                     c.execute('INSERT INTO {0} VALUES ({1})'.format(filename, res))
 
-        for result in self.fetch('SELECT user_id FROM users'):
-            user = result[0]
-            max_r = self.fetch("SELECT MAX(rating) FROM ratings WHERE user_id = {0}".format(user))[0][0]
-            min_r = self.fetch("SELECT MIN(rating) FROM ratings WHERE user_id = {0}".format(user))[0][0]
-            c.execute('INSERT INTO user_min_max_ratings VALUES ({0})'.format(
-                ','.join(str(v) if str(v).isnumeric() else "\"{0}\"".format(v) for v in [user, min_r, max_r])))
-
         self.conn.commit()
 
     def update(self, file_name):
@@ -79,12 +65,6 @@ class database:
                 res = ','.join(str(v) if str(v).isnumeric() else "\"{0}\"".format(v) for v in temp_fields)
                 self.c.execute('INSERT OR REPLACE INTO {0} VALUES ({1})'.format(filename, res))
                 infile.close()
-        for result in self.fetch('SELECT user_id FROM users'):
-            user = result[0]
-            max_r = self.fetch("SELECT MAX(rating) FROM ratings WHERE user_id = {0}".format(user))[0][0]
-            min_r = self.fetch("SELECT MIN(rating) FROM ratings WHERE user_id = {0}".format(user))[0][0]
-            self.c.execute('INSERT INTO user_min_max_ratings VALUES ({0})'.format(
-                ','.join(str(v) if str(v).isnumeric() else "\"{0}\"".format(v) for v in [user, min_r, max_r])))
 
         self.conn.commit()
 
