@@ -19,13 +19,13 @@ else:
         clusters = [[], [], [], []]
         coords = lambda code: (code.lat, code.lon)
         getindex = lambda dists, value: dists.index(value)
-        distances = [[zipcode.haversine(coords(medoids[i]), coords(code)) for code in zip_list] for i in range(0, 4)]
+        distances = [[zipcode.haversine(coords(medoids[dist]), coords(code)) for code in zip_list] for i in range(0, 4)]
 
-        i = 0
+        dist = 0
         for distance_tuple in zip(*distances):
             index = getindex(list(distance_tuple), min(distance_tuple))
-            clusters[index].append(zip_list[i])
-            i += 1
+            clusters[index].append(zip_list[dist])
+            dist += 1
 
         lat, lon = 0, 0
         for cluster in clusters:
@@ -35,10 +35,11 @@ else:
             lat /= len(cluster)
             lon /= len(cluster)
             nearestZip = None
-            for i in range(0, 999999999):
-                nearZips = zipcode.isinradius((lat, lon), i)
+            # 12425 is the largest distance between any two cities on earth
+            for dist in range(0, 12425):
+                nearZips = zipcode.isinradius((lat, lon), dist)
                 if len(nearZips) > 0:
-                    minD = i + 1
+                    minD = dist + 1
                     for zip_code in nearZips:
                         if zipcode.haversine((lat, lon), (zip_code.lat, zip_code.lon)) < minD:
                             minD = zipcode.haversine((lat, lon), (zip_code.lat, zip_code.lon)) < minD
