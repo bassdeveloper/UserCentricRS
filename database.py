@@ -39,11 +39,12 @@ class database:
                     gender CHAR(1) NOT NULL,
                     age INT NOT NULL,
                     occupation INT NOT NULL,
-                    zipcode INT NOT NULL,
+                    zipcode VARCHAR(32) NOT NULL,
                     PRIMARY KEY(user_id));''')
 
         files = [f for f in listdir(self.data_dir) if
-                 isfile(join(self.data_dir, f)) and f != "README" and f != "movies_original.dat"]
+                 isfile(join(self.data_dir,
+                             f)) and f != "README"]
 
         for file in files:
             filename = file.split('.dat')[0]
