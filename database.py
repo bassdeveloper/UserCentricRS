@@ -1,9 +1,14 @@
+"""Database handler for Recommendation system"""
 import sqlite3
 from os import listdir
 from os.path import isfile, join
 
 
 class database:
+    """
+    Database class for storing recommendation system dataset.
+    """
+
     def __init__(self, data_set_path=None):
         self.data_dir = data_set_path
         self.conn = sqlite3.connect('recommendation_system.db')
@@ -11,9 +16,16 @@ class database:
 
     @staticmethod
     def connect():
+        """
+        Open database by creating instance of this class.
+        :return:
+        """
         return database()
 
     def create(self):
+        """
+        Create database from input files.
+        """
         c = self.c
         try:
             c.execute('drop table ratings')
@@ -39,7 +51,8 @@ class database:
                     gender CHAR(1) NOT NULL,
                     age INT NOT NULL,
                     occupation INT NOT NULL,
-                    zipcode VARCHAR(32) NOT NULL,
+                    lat FLOAT NOT NULL,
+                    lon FLOAT NOT NULL,
                     PRIMARY KEY(user_id));''')
 
         files = [f for f in listdir(self.data_dir) if
@@ -58,6 +71,10 @@ class database:
         self.conn.commit()
 
     def update(self, file_name):
+        """
+        Update database with new/updated records in input files.
+        :param file_name:
+        """
         filename = file_name.split('.dat')[0]
         with open(join(self.data_dir, file_name)) as infile:
             for record in infile:
@@ -70,7 +87,21 @@ class database:
         self.conn.commit()
 
     def fetch(self, query):
-        return [[element for element in row] for row in self.c.execute(query).fetchall()]
+        """
+        Execute a query on database.
+        :param query: Query in string format.
+        :returns: Output of query.
+        :rtype: List[Tuple[Any,]]
+        """
+        try:
+            return [[element if type(element) is not str else element.strip("\n") for element in row] for row in
+                    self.c.execute(query).fetchall()]
+        except sqlite3.Error:
+            print(query)
+            return [[]]
 
     def close(self):
+        """
+        Close database.
+        """
         self.c.close()
