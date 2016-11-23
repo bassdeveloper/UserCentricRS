@@ -31,7 +31,7 @@ class QTreeNode:
         self.children = []  # type: List[QTreeNode]
         self.dirty_size = 0
 
-    def addChildren(self, children: List['QTreeNode']) -> 'QTreeNode':
+    def addChildren(self, children: List['QTreeNode']):
         """
         Adds a list of QTreeNode(s) as children of the calling node.
         :param children: List of children nodes.
@@ -129,6 +129,17 @@ class QuadTree:
         sum_size_un_split_node += getsizeof(un_split_node.rep_point)
         return sum_size_split_nodes * 100 / (sum_size_split_nodes + sum_size_split_nodes)
 
+    # noinspection PyMethodMayBeStatic
+    def __scalability_change__actual__(self, un_split_node: QTreeNode, split_nodes: List[QTreeNode]):
+        """
+        Calculates scalability change when a node is merge/split.
+        :param un_split_node: Node that is split or formed by merging the split nodes.
+        :param split_nodes: Nodes formed by splitting a given node or that will be merged into a single node.
+        :returns: scalability change
+        :rtype: float
+        """
+        return getsizeof(un_split_node) * 100 / (getsizeof(un_split_node) + getsizeof(split_nodes))
+
     def __locality_change__(self, un_split_node: QTreeNode, split_nodes: List[QTreeNode], is_checking_split):
         """
         Check if we should split/merge into the node further more.
@@ -182,9 +193,16 @@ class QuadTree:
         :param node: Existing node we have i.e. the node formed after merge.
         :param children: List of nodes we are considering for a merge.
         :returns: Locality loss
-        :rtype: float
+        :rtype: bool
         """
-        scalability_change = (1 - self.M) * self.__scalability_change__(node, children)
+        n_non_empty_child = 0
+        for child in children:
+            if child.elements:
+                n_non_empty_child += 1
+        if n_non_empty_child != len(children):
+            return True
+
+        scalability_change = (1 - self.M) * self.__scalability_change__actual__(node, children)
         locality_change = self.M * self.__locality_change__(node, children, False)
         return scalability_change > locality_change
 
@@ -194,9 +212,9 @@ class QuadTree:
         :param node: The un-split node is under consideration for splitting.
         :param children: List of nodes created by splitting the un-split node.
         :returns: Locality gain
-        :rtype: float
+        :rtype: bool
         """
-        scalability_change = (1 - self.M) * self.__scalability_change__(node, children)
+        scalability_change = (1 - self.M) * self.__scalability_change__actual__(node, children)
         locality_change = self.M * self.__locality_change__(node, children, True)
         return scalability_change < locality_change
 
@@ -206,6 +224,7 @@ class QuadTree:
         :param level: Optional limitation on lars depth.
         :param user_loc: User location coordinate tuple.
         :returns: Lowest maintained cell.
+        :rtype: List[Tuple[int, Tuple[float, float]]]
         """
         closest_node = self.root
         min_dist = haversine(closest_node.rep_point, user_loc)
@@ -237,7 +256,7 @@ class QuadTree:
             # of incorrect type hinting. Get your shit together python.
             if bool(node.children):
                 if self.check_merge(node, node.children):
-                    node.elements = [element for child in node.children for element in child]
+                    node.elements = [element for child in node.children for element in child.elements]
                     node.children.clear()
                     node.dirty_size = 0
             else:
@@ -289,6 +308,37 @@ class QuadTree:
         for node in path:
             self.maintenance(node)
 
+    def remove_user(self, user_info: Tuple[int, Tuple[float, float]]):
+        """
+        Adds new user to QuadTree and calls maintenance.
+        :param user_info: User id, user location coordinate tuple
+        """
+        root = self.root
+        root.elements.remove(user_info)
+        closest_node = root
+        path = [root]
+        root.dirty_size += 1
+        user_loc = user_info[1]
+        min_dist = haversine(closest_node.rep_point, user_loc)
+        break_now = True
+        while True:
+            for child_node in closest_node.children:
+                n_dist = haversine(child_node.rep_point, user_loc)
+                if n_dist < min_dist:
+                    path.append(child_node)
+                    closest_node = child_node
+                    min_dist = n_dist
+                    closest_node.elements.remove(user_info)
+                    child_node.dirty_size = max(child_node.dirty_size - 1, 0)
+                    break_now = False
+            if break_now:
+                break
+            break_now = True
+        # Check split.
+        path.reverse()
+        for node in path:
+            self.maintenance(node)
+
     def bf_traverse(self):
         """
         Breadth wise traversal of the tree
@@ -309,7 +359,6 @@ class QuadTree:
         """
         with open(filename, "wb") as outfile:
             dump(self, outfile)
-
 
     @staticmethod
     def import_tree(filename: str):

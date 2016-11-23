@@ -29,7 +29,6 @@ def k_means(data_points: List[Tuple[int, Tuple[float, float]]], k):
         return clusters, centroids
 
     centroids = [point[1] for point in sample(data_points, k)]
-    clusters = [[] for i in range(k)]
     prev_clusters = (() for i in range(k))
 
     while True:
