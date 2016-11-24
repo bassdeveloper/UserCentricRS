@@ -34,7 +34,9 @@ class RecommendationSystem:
         else:
             recommended_titles = []
             if choice == 'y':
-                choice = int(input(''''''))
+                choice = int(input('''
+                                1. Get LARS recommendation.
+                                '''))
                 if choice == 1:
                     users = self.quad_tree.nearest_cell(
                         tuple(map(float, input("Input your location\n").split(','))),
