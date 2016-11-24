@@ -83,8 +83,10 @@ class RecommendationSystem:
         :rtype: List[Tuple[str, float]]
         """
         catalogue = []
-        watched_movies = [movie_id[0] for movie_id in
-                          self.db.fetch("SELECT movie_id FROM ratings WHERE user_id = {0}".format(user_id))]
+        watched_movies = []
+        if user_id:
+            watched_movies = [movie_id[0] for movie_id in
+                              self.db.fetch("SELECT movie_id FROM ratings WHERE user_id = {0}".format(user_id))]
 
         for user_id, user_loc in users:
             avg_rating = self.db.fetch("SELECT AVG(rating) FROM ratings WHERE user_id = {0}".format(user_id))[0][0]
