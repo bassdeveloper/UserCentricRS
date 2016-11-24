@@ -34,7 +34,9 @@ class RecommendationSystem:
         else:
             recommended_titles = []
             if choice == 'y':
-                choice = int(input(''''''))
+                choice = int(input('''
+                                1. Get LARS recommendation.
+                                '''))
                 if choice == 1:
                     users = self.quad_tree.nearest_cell(
                         tuple(map(float, input("Input your location\n").split(','))),
@@ -81,8 +83,10 @@ class RecommendationSystem:
         :rtype: List[Tuple[str, float]]
         """
         catalogue = []
-        watched_movies = [movie_id[0] for movie_id in
-                          self.db.fetch("SELECT movie_id FROM ratings WHERE user_id = {0}".format(user_id))]
+        watched_movies = []
+        if user_id:
+            watched_movies = [movie_id[0] for movie_id in
+                              self.db.fetch("SELECT movie_id FROM ratings WHERE user_id = {0}".format(user_id))]
 
         for user_id, user_loc in users:
             avg_rating = self.db.fetch("SELECT AVG(rating) FROM ratings WHERE user_id = {0}".format(user_id))[0][0]
